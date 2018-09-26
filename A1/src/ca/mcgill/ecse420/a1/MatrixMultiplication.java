@@ -16,9 +16,10 @@ public class MatrixMultiplication {
 		double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
 		double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
 
-	//	double[][] c = sequentialMultiplyMatrix(a, b);
+		double[][] c = sequentialMultiplyMatrix(a, b);
 		double[][] d = parallelMultiplyMatrix(a, b);
 
+		System.out.println(Arrays.deepToString(c));
 		System.out.println(Arrays.deepToString(d));
 
 
@@ -104,8 +105,11 @@ public class MatrixMultiplication {
 		// Create a Thread Pool to manage all threads
 		ExecutorService executor = Executors.newFixedThreadPool(NUMBER_THREADS);
 
-		// Create the desired amount of threads
+		// Create and start the desired amount of threads
 		for (int threadNumber=0; threadNumber<NUMBER_THREADS; threadNumber++) {
+
+			// Create a MatrixPartialMultiplier task where the startingRow corresponds
+			// to the task's thread number
 			MatrixPartialMultiplier task = new MatrixPartialMultiplier(a, b, c, threadNumber, NUMBER_THREADS);
 			executor.execute(task);
 		}
