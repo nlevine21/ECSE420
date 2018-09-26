@@ -11,18 +11,7 @@ public class MatrixMultiplication {
 	private static final int MATRIX_SIZE = 2000;
 
 	public static void main(String[] args) {
-
-		// Generate two random matrices, same size
-		double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
-		double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
-
-		double[][] c = sequentialMultiplyMatrix(a, b);
-		double[][] d = parallelMultiplyMatrix(a, b);
-
-		System.out.println(Arrays.deepToString(c));
-		System.out.println(Arrays.deepToString(d));
-
-
+		computeExecutionTime(false,true);
 	}
 
 	/**
@@ -137,6 +126,35 @@ public class MatrixMultiplication {
 			}
 		}
 		return matrix;
+	}
+	
+public static void computeExecutionTime(boolean seq, boolean par){
+		
+		// Generate two random matrices, same size
+		double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
+		double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
+
+		long startTime;
+		long endTime;
+		
+		if(seq){
+			// Start sequential time computation
+			System.out.println("Computing sequentially...");
+			startTime = System.currentTimeMillis();
+			sequentialMultiplyMatrix(a, b);
+			endTime = System.currentTimeMillis();
+			System.out.println("Sequential computational time: "+ (endTime-startTime) + "ms");
+		}
+		
+		if(par){
+			// Start parallel time computation
+			System.out.println("Computing in parallel with " + NUMBER_THREADS + " threads...");
+			startTime = System.currentTimeMillis();
+			parallelMultiplyMatrix(a, b);
+			endTime = System.currentTimeMillis();
+			System.out.println("Parallel computational time: "+ (endTime-startTime) + "ms");
+		}
+		
 	}
 
 }
