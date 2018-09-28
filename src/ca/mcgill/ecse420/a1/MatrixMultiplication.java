@@ -7,11 +7,11 @@ import java.util.concurrent.TimeUnit;
 
 public class MatrixMultiplication {
 
-	private static final int NUMBER_THREADS = 4;
-	private static final int MATRIX_SIZE = 2000;
+	private static final int NUMBER_THREADS =1;
+	private static final int MATRIX_SIZE = 4000;
 
-	private static final boolean COMPUTE_SEQUENTIAL = false;
-	private static final boolean COMPUTE_PARALLEL = true;
+	private static final boolean COMPUTE_SEQUENTIAL = true;
+	private static final boolean COMPUTE_PARALLEL = false;
 
 	public static void main(String[] args) {
 		computeExecutionTime();
