@@ -10,6 +10,8 @@ public class DiningPhilosophers {
 	private static Semaphore waitress = new Semaphore(1);
 	private static final int SITUATION = 3;
 	private static final int NUM_PHILOSOPHERS = 5;
+
+	private static final int MAX_SLEEP_TIME = 2000;
 	
 	public static void main(String[] args) {
 
@@ -34,6 +36,13 @@ public class DiningPhilosophers {
         	executor.execute(philosophers[i]);
         }
 
+	}
+
+	public static void sleep() {
+		try {
+			Thread.sleep(System.currentTimeMillis() % MAX_SLEEP_TIME);
+		} catch (Exception e) {
+		}
 	}
 
 	private static Philosopher initializePhilosopher(int i){
@@ -80,7 +89,6 @@ public class DiningPhilosophers {
 		protected void pickupChopstick(int chopstick) throws InterruptedException{
 			synchronized(chopsticks[chopstick]) {
 				chopsticks[chopstick].acquire();
-				System.out.println("PHILOSOPHER "+this.philosopherIndex+" gets chopstick "+chopstick);
 			}
 		}
 
@@ -90,7 +98,6 @@ public class DiningPhilosophers {
 		 * @param chopstick is the index of the chopstick that is being requested for release
 		 * */
 		protected void dropChopstick(int chopstick) throws InterruptedException{
-			System.out.println("PHILOSOPHER "+this.philosopherIndex+" drops chopstick "+chopstick);
 			chopsticks[chopstick].release();
 		}
 
@@ -101,6 +108,8 @@ public class DiningPhilosophers {
 		protected void think(){
 			this.state = "THINKING";
 			System.out.println("PHILOSOPHER " + this.philosopherIndex + " IS THINKING");
+
+
 		}
 
 		/**
@@ -110,6 +119,8 @@ public class DiningPhilosophers {
 		protected void eat(){
 			this.state = "EATING";
 			System.out.println("PHILOSOPHER " + this.philosopherIndex + " IS EATING");
+
+
 		}
 
 		/**
@@ -118,7 +129,7 @@ public class DiningPhilosophers {
 		 * */
 		protected void hungry(){
 			this.state = "HUNGRY";
-			System.out.println("PHILOSOPHER "+this.philosopherIndex+" IS HUNGRY");
+			System.out.println("PHILOSOPHER " + this.philosopherIndex + " IS HUNGRY");
 		}
 
 		/**
@@ -175,6 +186,7 @@ public class DiningPhilosophers {
 
 					// Philosopher thinks
 					think();
+
 				} catch (InterruptedException e) {
 				}
 			}
@@ -204,11 +216,18 @@ public class DiningPhilosophers {
 						continue;
 					}
 
+
 					// Philosopher attempts to take the chopstick of the right neighbour
 					if (!chopsticks[getRightNeighbor()].tryAcquire()) {
-						// If he cannot acquire this chopstick, he will drop his current chopstick and restart the process
-						dropChopstick(this.philosopherIndex);
-						continue;
+
+						// If he cannot acquire this chopstick, he will wait a random amount of time and try again
+						sleep();
+
+						// If he still cannot pick up the chopstick, he drops his current stick
+						if (!chopsticks[getRightNeighbor()].tryAcquire()) {
+							dropChopstick(this.philosopherIndex);
+							continue;
+						}
 					}
 
 
@@ -216,12 +235,16 @@ public class DiningPhilosophers {
 					// Philosopher eats
 					eat();
 
+					// Allow for eating
+					sleep();
+
 					// Philosopher drops chopsticks
 					dropChopstick(philosopherIndex);
 					dropChopstick(getRightNeighbor());
 
 					// Philosopher thinks
 					think();
+					sleep();
 
 				} catch (InterruptedException e) {
 
@@ -248,7 +271,6 @@ public class DiningPhilosophers {
 
 					// While the philosopher is hungry, continuously try to pickup chopsticks
 					while(this.state.equals("HUNGRY")){
-
 						waitress.acquire();
 
 
@@ -265,8 +287,8 @@ public class DiningPhilosophers {
 						waitress.release();
 					}
 
-
-
+					// Allow for eating time
+					sleep();
 
 					waitress.acquire();
 
@@ -276,6 +298,8 @@ public class DiningPhilosophers {
 
 					// Philosopher thinks
 					think();
+					sleep();
+
 					waitress.release();
 
 
