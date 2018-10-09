@@ -5,13 +5,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
 public class DiningPhilosophers {
-	private static Philosopher[] philosophers;
-	private static Semaphore[] chopsticks;
-	private static Semaphore waitress = new Semaphore(1);
-	private static final int SITUATION = 3;
-	private static final int NUM_PHILOSOPHERS = 5;
 
-	private static final int MAX_SLEEP_TIME = 2000;
+	private static Philosopher[] philosophers;									// List of threads representing philosophers
+	private static Semaphore[] chopsticks;										// Chopsticks needed by philosophers to eat
+	private static Semaphore waitress = new Semaphore(1);				// Waitress which grants access to the chopsticks
+
+	private static final int SITUATION = 2;				// Situation wanted. 1 for deadlock. 2 for starvation. 3 for proper.
+	private static final int NUM_PHILOSOPHERS = 5;		// Number of philosophers (threads)
+	private static final int MAX_SLEEP_TIME = 2000;		// Maximum amount of time the threads can sleep
 	
 	public static void main(String[] args) {
 
@@ -31,13 +32,17 @@ public class DiningPhilosophers {
         	philosophers[i] = initializePhilosopher(i);
         	chopsticks[i] = new	Semaphore(1);
         }
-        
+
+        // Start threads
         for(int i = 0; i < NUM_PHILOSOPHERS; i++){
         	executor.execute(philosophers[i]);
         }
 
 	}
 
+	/**
+	 * Method which sleeps a thread for a random period of time
+	 */
 	public static void sleep() {
 		try {
 			Thread.sleep(System.currentTimeMillis() % MAX_SLEEP_TIME);
@@ -45,24 +50,30 @@ public class DiningPhilosophers {
 		}
 	}
 
-	private static Philosopher initializePhilosopher(int i){
+	/**
+	 * Initializes a philosopher object according to the situation
+	 *
+	 * @param index The index of the philosopher
+	 * @return Correct type of Philosopher object
+	 */
+	private static Philosopher initializePhilosopher(int index) {
 		if (SITUATION == 1) {
-			return new DeadlockedPhilosopher(i);
+			return new DeadlockedPhilosopher(index);
 		} else if (SITUATION == 2) {
-			return new StarvingPhilosopher(i);
+			return new StarvingPhilosopher(index);
 		} else  {
-			return new SmartPhilosopher(i);
+			return new SmartPhilosopher(index);
 		}
 	}
 
 	/**
-	 * Class that defines the Philosopher thread
+	 * Abstract class that defines the Philosopher thread
 	 *
 	 */
 	public static abstract class Philosopher implements Runnable {
 
-		int philosopherIndex;
-		String state;
+		int philosopherIndex;		// The index of the philosopher
+		String state;				// The state which the philosopher is in (HUNGRY, EATING OR THINKING)
 
 		/**
 		 * Philosopher constructor function
@@ -76,58 +87,55 @@ public class DiningPhilosophers {
 
 		@Override
 		/**
-		 * Method which defines how the philosopher will eat/think
+		 * Method which defines how the philosopher will eat/think.
+		 * To be implemented by inheriting class.
 		 */
 		public abstract void run();
 
 
 		/**
-		 * Void method that (eventually) acquires a chopstick and prints a statement
+		 * Void method that acquires a chopstick when it is available
 		 *
 		 * @param chopstick is the index of the chopstick that is being requested for acquisition
 		 * */
-		protected void pickupChopstick(int chopstick) throws InterruptedException{
+		protected void pickupChopstick(int chopstick) throws InterruptedException {
 			synchronized(chopsticks[chopstick]) {
 				chopsticks[chopstick].acquire();
 			}
 		}
 
 		/**
-		 * Void method that releases a chopstick and prints a statement
+		 * Void method that releases a chopstick
 		 *
-		 * @param chopstick is the index of the chopstick that is being requested for release
+		 * @param chopstick is the index of the chopstick that is being released
 		 * */
-		protected void dropChopstick(int chopstick) throws InterruptedException{
+		protected void dropChopstick(int chopstick) {
 			chopsticks[chopstick].release();
 		}
 
 		/**
-		 * Void method that prints a statement telling the user that the philosopher is thinking
+		 * Void method that sets the philosopher's state to THINKING
 		 *
 		 * */
-		protected void think(){
+		protected void think() {
 			this.state = "THINKING";
 			System.out.println("PHILOSOPHER " + this.philosopherIndex + " IS THINKING");
-
-
 		}
 
 		/**
-		 * Void method that prints a statement telling the user that the philosopher is eating
+		 * Void method that sets the philosopher's state to EATING
 		 *
 		 * */
-		protected void eat(){
+		protected void eat() {
 			this.state = "EATING";
 			System.out.println("PHILOSOPHER " + this.philosopherIndex + " IS EATING");
-
-
 		}
 
 		/**
-		 * Void method that prints a statement telling the user that the philosopher is hungry
+		 * Void method that sets the philosopher's state to HUNGRY
 		 *
 		 * */
-		protected void hungry(){
+		protected void hungry() {
 			this.state = "HUNGRY";
 			System.out.println("PHILOSOPHER " + this.philosopherIndex + " IS HUNGRY");
 		}
@@ -136,7 +144,7 @@ public class DiningPhilosophers {
 		 * Returns the index of the left neighbor to the given philosopher
 		 *
 		 * */
-		protected int getLeftNeighbor(){
+		protected int getLeftNeighbor() {
 
 			if(this.philosopherIndex-1 < 0) {
 				return NUM_PHILOSOPHERS-1;
@@ -149,12 +157,15 @@ public class DiningPhilosophers {
 		 * Returns the index of the right neighbor to the given philosopher
 		 *
 		 * */
-		protected int getRightNeighbor(){
+		protected int getRightNeighbor() {
 			return (this.philosopherIndex+1)%NUM_PHILOSOPHERS;
 		}
 
 	}
 
+	/**
+	 * Implemented Philosopher class which will eventually end in Deadlock
+	 */
 	public static class DeadlockedPhilosopher extends Philosopher {
 
 		public DeadlockedPhilosopher(int philosopherIndex) {
@@ -163,7 +174,7 @@ public class DiningPhilosophers {
 
 		@Override
 		/**
-		 * Implemented method for dining philosophers
+		 * Implemented run method which will end in deadlock
 		 */
 		public void run() {
 			while (true) {
@@ -194,6 +205,9 @@ public class DiningPhilosophers {
 	}
 
 
+	/**
+	 * Implemented Philosopher class which can result in Starvation
+	 */
 	public static class StarvingPhilosopher extends Philosopher {
 
 		public StarvingPhilosopher(int philosopherIndex) {
@@ -202,7 +216,7 @@ public class DiningPhilosophers {
 
 		@Override
 		/**
-		 * Implemented method for dining philosophers
+		 * Implemented run method which could cause starvation
 		 */
 		public void run() {
 			while (true) {
@@ -235,7 +249,7 @@ public class DiningPhilosophers {
 					// Philosopher eats
 					eat();
 
-					// Allow for eating
+					// Allow time for eating
 					sleep();
 
 					// Philosopher drops chopsticks
@@ -246,13 +260,16 @@ public class DiningPhilosophers {
 					think();
 					sleep();
 
-				} catch (InterruptedException e) {
+				} catch (Exception e) {
 
 				}
 			}
 		}
 	}
 
+	/**
+	 * Implemented Philosopher class which will not result in deadlock nor starvation
+	 */
 	public static class SmartPhilosopher extends Philosopher {
 
 		public SmartPhilosopher (int philosopherIndex) {
@@ -261,7 +278,7 @@ public class DiningPhilosophers {
 
 		@Override
 		/**
-		 * Implemented method for dining philosophers
+		 * Implemented run method for Dining Philosophers which will not result in deadlock or starvation
 		 */
 		public void run() {
 			while (true) {
@@ -269,8 +286,10 @@ public class DiningPhilosophers {
 
 					hungry();
 
-					// While the philosopher is hungry, continuously try to pickup chopsticks
-					while(this.state.equals("HUNGRY")){
+
+					while(this.state.equals("HUNGRY")) {
+
+						// Ask the waitress for permission to pick up the chopsticks
 						waitress.acquire();
 
 
@@ -284,23 +303,26 @@ public class DiningPhilosophers {
 							eat();
 						}
 
+						// Allow other philosopher's to access the waitress
 						waitress.release();
 					}
 
 					// Allow for eating time
 					sleep();
 
+					// Ask the waitress to release chopsticks
 					waitress.acquire();
 
 					// Philosopher drops chopsticks
 					dropChopstick(this.philosopherIndex);
 					dropChopstick(getRightNeighbor());
 
+					// Other philosophers can acquire the waitress's attention
+					waitress.release();
+
 					// Philosopher thinks
 					think();
 					sleep();
-
-					waitress.release();
 
 
 
