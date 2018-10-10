@@ -158,6 +158,7 @@ public class DiningPhilosophers {
 		 *
 		 * */
 		protected int getRightNeighbor() {
+
 			return (this.philosopherIndex+1)%NUM_PHILOSOPHERS;
 		}
 
@@ -169,6 +170,7 @@ public class DiningPhilosophers {
 	public static class DeadlockedPhilosopher extends Philosopher {
 
 		public DeadlockedPhilosopher(int philosopherIndex) {
+
 			super(philosopherIndex);
 		}
 
@@ -211,6 +213,7 @@ public class DiningPhilosophers {
 	public static class StarvingPhilosopher extends Philosopher {
 
 		public StarvingPhilosopher(int philosopherIndex) {
+
 			super(philosopherIndex);
 		}
 
@@ -273,6 +276,7 @@ public class DiningPhilosophers {
 	public static class SmartPhilosopher extends Philosopher {
 
 		public SmartPhilosopher (int philosopherIndex) {
+
 			super(philosopherIndex);
 		}
 

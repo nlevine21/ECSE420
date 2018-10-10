@@ -2,19 +2,18 @@ package ca.mcgill.ecse420.a1;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 public class MatrixMultiplication {
 
 
-	private static final int NUMBER_THREADS = 98;
-	private static final int MATRIX_SIZE = 4000;
+	private static final int NUMBER_THREADS = 4;				// Number of threads to be used for multiplication
+	private static final int MATRIX_SIZE = 2000;				// Size of the square matrix
 
-	private static final boolean COMPUTE_SEQUENTIAL = true;
-	private static final boolean COMPUTE_PARALLEL = false;
+	private static final boolean COMPUTE_SEQUENTIAL = false;	// Flag set when we wish to compute the multiplication sequentially
+	private static final boolean COMPUTE_PARALLEL = true;		// Flag set when we wish to compute the multiplication in parallel
 
 	public static void main(String[] args) {
+
 		computeExecutionTime();
 	}
 
