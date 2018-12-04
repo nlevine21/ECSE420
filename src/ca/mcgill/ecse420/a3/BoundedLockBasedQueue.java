@@ -9,9 +9,13 @@ public class BoundedLockBasedQueue<T> {
 	
 	private ReentrantLock enqLock = new ReentrantLock();
 	private ReentrantLock deqLock = new ReentrantLock();
+	private ReentrantLock size1Lock = new ReentrantLock();
 	
 	private int size;
 	private int capacity;
+	
+	int head;
+	int tail;
 	
 	private T[] queue;
 	
@@ -26,6 +30,8 @@ public class BoundedLockBasedQueue<T> {
 		this.capacity = capacity;
 		this.queue = (T[]) new Object[capacity];
 		this.size = 0;
+		this.head = 0;
+		this.tail = 0;
 	}
 	/**
 	 * Enqueues an item of type T (puts the item at the back of the list)
@@ -44,9 +50,25 @@ public class BoundedLockBasedQueue<T> {
 			return;
 		}
 		
+		// Set boolean for if the size1Lock is being locked as to unlock it later on
+		boolean size1LockLocked = false;
+		if(size < 2){
+			this.size1Lock.lock();
+			size1LockLocked = true;
+		}
+		
+		if(size > 0){
+			this.tail = (this.tail + 1) % capacity;
+		}
+		
 		// Store the item at the end of the array 
-		this.queue[size] = item;
+		this.queue[this.tail] = item;
 		size++;
+		
+		// If the size1Lock was locked, unlock it
+		if(size1LockLocked){
+			size1Lock.unlock();
+		}
 		
 		// Release the enqueue lock
 		this.enqLock.unlock();
@@ -69,18 +91,29 @@ public class BoundedLockBasedQueue<T> {
 			return null;
 		}
 		
-		// Obtain the item at the head of the queue
-		T item = this.queue[0];
-		
-		// Move all queued items one position closer to the head of the queue
-		for (int i=1; i<size; i++) {
-			this.queue[i-1] = this.queue[i];
+		// Set boolean for if the size1Lock is being locked as to unlock it later on
+		boolean size1LockLocked = false;
+		if(size == 1){
+			this.size1Lock.lock();
+			size1LockLocked = true;
 		}
 		
-		// Decrease the size of the queue and set the last value to null (as it has already been recorded
-		// in the next position)
+		// Obtain the item at the head of the queue and set the current head position to null
+		T item = this.queue[this.head];
+		this.queue[this.head] = null;
+		
+		// Decrease the size of the queue
 		size--;
-		this.queue[size] = null;
+		
+		// If the size is greater than zero, push the head pointer to the following index
+		if(size > 0){
+			this.head = (this.head + 1) % capacity;
+		}
+		
+		// If the size1Lock was locked, unlock it
+		if(size1LockLocked){
+			size1Lock.unlock();
+		}
 		
 		// Release the dequeue lock
 		this.deqLock.unlock();
@@ -93,9 +126,11 @@ public class BoundedLockBasedQueue<T> {
 	 * */
 	public void printQueue(){
 		System.out.print("Current Queue: ");
+		int j = this.head;
 		for(int i = 0; i < size; i++){
-			System.out.print(this.queue[i].toString() + " ");
+			System.out.print(this.queue[j].toString() + " ");
+			j = (j + 1) % this.capacity;
 		}
-		System.out.println();
+		System.out.println("\nHead Index: "+this.head+", Tail Index: "+this.tail);
 	}
 }
