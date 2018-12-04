@@ -10,6 +10,7 @@ public class BoundedLockBasedQueue<T> {
 	private ReentrantLock enqLock = new ReentrantLock();
 	private ReentrantLock deqLock = new ReentrantLock();
 	private ReentrantLock size1Lock = new ReentrantLock();
+	private ReentrantLock printLock = new ReentrantLock();
 	
 	private int size;
 	private int capacity;
@@ -125,6 +126,7 @@ public class BoundedLockBasedQueue<T> {
 	 * Print the queued items
 	 * */
 	public void printQueue(){
+		printLock.lock();
 		System.out.print("Current Queue: ");
 		int j = this.head;
 		for(int i = 0; i < size; i++){
@@ -132,5 +134,6 @@ public class BoundedLockBasedQueue<T> {
 			j = (j + 1) % this.capacity;
 		}
 		System.out.println("\nHead Index: "+this.head+", Tail Index: "+this.tail);
+		printLock.unlock();
 	}
 }

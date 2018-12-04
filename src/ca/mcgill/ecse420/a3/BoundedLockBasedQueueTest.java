@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 
 public class BoundedLockBasedQueueTest {
 	// Create a BoundedLockBasedQueue with a speicific capacity
-	static BoundedLockBasedQueue<Integer> q = new BoundedLockBasedQueue<Integer>(5);
+	static BoundedLockBasedQueue<Integer> q;
 	static int step = 0;
 	
 	public static void main(String[] args){
@@ -16,6 +16,8 @@ public class BoundedLockBasedQueueTest {
 		
 		System.out.println("SEQUENTIAL QUEUE TEST");
 		
+		q = new BoundedLockBasedQueue<Integer>(5);
+		
 		// Attempt to dequeue, and expect to get an error message as there are not items in the queue
 		dequeue();
 		
@@ -25,69 +27,42 @@ public class BoundedLockBasedQueueTest {
 		enqueue(4);
 		enqueue(5);
 		
-		// Attempt to enqueue another item, however the queue is full and thus expect to get an error message
+		// Attempt to enqueue another item, however the queue is full and thus expect to get a full-stack message
 		enqueue(6);
 		
 		dequeue();
-		dequeue();
-		dequeue();
-		enqueue(6);
-		enqueue(7);
-		enqueue(8);
-		enqueue(9);
-		dequeue();
-		dequeue();
-		dequeue();
-		dequeue();
-		dequeue();
-		dequeue();
-		enqueue(10);
-		enqueue(11);
 		dequeue();
 		dequeue();
 		
 		System.out.println("\nPARALLEL QUEUE TEST");
 		
+		q = new BoundedLockBasedQueue<Integer>(5);
+		
 		ExecutorService executor = Executors.newFixedThreadPool(4);
 		executor.execute(new Task1());
 		executor.execute(new Task2());
-		executor.execute(new Task3());
-		executor.execute(new Task4());
 		
 		// Wait for all threads to terminate
 		executor.shutdown();
 		while (!executor.isTerminated());
-		
-		q.printQueue();
 	}
 	
 	public static void enqueue(Integer item){
-		System.out.println(step+") Queue " + item);
-		step++;
 		q.enqueue(item);
+		q.printQueue();
 	}
 	
 	public static void dequeue(){
-		System.out.println(step+") Dequeue item from the head of the queue");
-		step++;
 		q.dequeue();
+		q.printQueue();
 	}
 	
 	private static class Task1 implements Runnable {
 		public void run(){
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			enqueue(1);
-			enqueue(1);
+			sleep();
 			dequeue();
-			dequeue();
-			dequeue();
-			enqueue(1);
-			dequeue();
+			sleep();
 			dequeue();
 		}
 	}
@@ -95,51 +70,21 @@ public class BoundedLockBasedQueueTest {
 	private static class Task2 implements Runnable {
 		public void run(){
 			enqueue(2);
+			sleep();
+			enqueue(3);
+			sleep();
 			dequeue();
-			dequeue();
-			dequeue();
-			enqueue(2);
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			enqueue(2);
-			dequeue();
+			sleep();
 			dequeue();
 		}
 	}
 	
-	private static class Task3 implements Runnable {
-		public void run(){
-			enqueue(3);
-			enqueue(3);
-			dequeue();
-			dequeue();
-			dequeue();
-			enqueue(3);
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			enqueue(3);
-			dequeue();
-			dequeue();
-		}
-	}
-	
-	private static class Task4 implements Runnable {
-		public void run(){
-			enqueue(4);
-			dequeue();
-			dequeue();
-			dequeue();
-			enqueue(4);
-			dequeue();
-			dequeue();
+	private static void sleep(){
+		try {
+			Thread.sleep(200);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 }
