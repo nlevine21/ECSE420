@@ -1,5 +1,6 @@
 package ca.mcgill.ecse420.a3;
 
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -8,131 +9,101 @@ import java.util.concurrent.Future;
 public class MatrixVectorMultiplyTask implements Callable<double[]> {
 	
 	double[][] matrix;
-	double[] vector;
+	double[] vector, result;
+	
+	int rowStart, rowEnd, columnStart, columnEnd;
+	
 	
 	ExecutorService exec = Executors.newCachedThreadPool();
 	
 	public MatrixVectorMultiplyTask(double[][] matrix, double[] vector){
 		this.matrix = matrix;
 		this.vector = vector;
+		
+		this.result = new double[matrix.length];
+		
+		this.rowStart = 0;
+		this.columnStart = 0;
+		this.rowEnd = matrix.length - 1;
+		this.columnEnd = matrix[0].length - 1;
+		
 	}
 	
-	public double[] call() throws Exception {
+	private MatrixVectorMultiplyTask(double[][] matrix, double[] vector, double[] result, int rStart, int rEnd, int cStart, int cEnd){
+		this.matrix = matrix;
+		this.vector = vector;
+		
+		this.result = result;
+		
+		this.rowStart = rStart;
+		this.rowEnd = rEnd;
+		this.columnStart = cStart;
+		this.columnEnd = cEnd;
+
+	}
+	
+	public double[] call() {
 		
 			
-		if (matrix.length == 1) {
-			double[] result = new double[1];
-			result[0] = 0;
+		if (rowStart == rowEnd) {
 			
-			for (int i=0; i<matrix[0].length; i++) {
-				result[0] += matrix[0][i]*vector[i];
+			double[] partialResult = new double[1];
+			for (int i=columnStart; i<=columnEnd; i++) {
+				partialResult[0] += matrix[rowStart][i]*vector[i];
 			}
 			
-			return result;
+			return partialResult;
+			
 		} else {
-			double[][] a1, a2, a3, a4; 
-			double[] v1, v2;
+
+		
+			int rowHalfSize = (((rowEnd+1)-rowStart)/2) - 1;
+			int columnHalfSize = (((columnEnd+1)-columnStart)/2) - 1;
+
+			int r1Start = rowStart;
+			int r1End = rowStart + rowHalfSize;
+			int r2Start = rowStart + rowHalfSize + 1;
+			int r2End = rowEnd;
 			
-			int vectorHalfSize = vector.length/2;
-			boolean evenVectorLength = vector.length % 2 == 0;
+			int c1Start = columnStart;
+			int c1End = columnStart + columnHalfSize;
+			int c2Start = columnStart + columnHalfSize + 1;
+			int c2End = columnEnd;
 			
-			int matrixRowHalfSize = matrix.length/2;
-			int newTopMatrixRowSize, newBottomMatrixRowSize;
+			try {
 			
-			if (matrix.length % 2 == 0) {
-				newTopMatrixRowSize = matrixRowHalfSize;
-			} else {
-				newTopMatrixRowSize = matrixRowHalfSize+1;
-			}
-			
-			newBottomMatrixRowSize = matrixRowHalfSize;
-			
-			if (evenVectorLength) {
-				a1 = new double[newTopMatrixRowSize][vectorHalfSize];
-				a2 = new double[newTopMatrixRowSize][vectorHalfSize];
-				a3 = new double[newBottomMatrixRowSize][vectorHalfSize];
-				a4 = new double[newBottomMatrixRowSize][vectorHalfSize];
+				Future<double[]> partialTop1 = exec.submit(new MatrixVectorMultiplyTask(matrix, vector, result, r1Start, r1End, c1Start, c1End));
+				Future<double[]> partialTop2 = exec.submit(new MatrixVectorMultiplyTask(matrix, vector, result, r1Start, r1End, c2Start, c2End));			
+				Future<double[]> partialBottom1 = exec.submit(new MatrixVectorMultiplyTask(matrix, vector, result, r2Start, r2End, c1Start, c1End));
+				Future<double[]> partialBottom2 = exec.submit(new MatrixVectorMultiplyTask(matrix, vector, result, r2Start, r2End, c2Start, c2End));
 				
-				v1 = new double[vectorHalfSize];
-				v2 = new double[vectorHalfSize];
-			} else {
-				a1 = new double[newTopMatrixRowSize][vectorHalfSize+1];
-				a2 = new double[newTopMatrixRowSize][vectorHalfSize];
-				a3 = new double[newBottomMatrixRowSize][vectorHalfSize+1];
-				a4 = new double[newBottomMatrixRowSize][vectorHalfSize];
+				Future<double[]> top = exec.submit(new VectorAddTask(partialTop1.get(), partialTop2.get()));
+				Future<double[]> bottom = exec.submit(new VectorAddTask(partialBottom1.get(), partialBottom2.get()));
 				
-				v1 = new double[vectorHalfSize+1];
-				v2 = new double[vectorHalfSize];
-			}
-			
-			for (int i=0; i<matrix.length; i++) {
-				for (int j=0; j<matrix[0].length; j++) {
-					
-					if (evenVectorLength) {
-						if (i<newTopMatrixRowSize && j<vectorHalfSize) {
-							a1[i][j] = matrix[i][j];
-							v1[j] = vector[j];
-							
-						} else if (i<newTopMatrixRowSize && j>=vectorHalfSize) {
-							a2[i][j-vectorHalfSize] = matrix[i][j];
-							v2[j-vectorHalfSize] = vector[j];
-							
-						} else if (i>=newTopMatrixRowSize && j<vectorHalfSize) {
-							a3[i-newTopMatrixRowSize][j] = matrix[i][j];
-							v1[j] = vector[j];
-							
-						} else if (i>=newTopMatrixRowSize && j>=vectorHalfSize) {
-							a4[i-newTopMatrixRowSize][j-vectorHalfSize] = matrix[i][j];
-							v2[j-vectorHalfSize] = vector[j];
-						}
+				double[] topVec = top.get();
+				double[] bottomVec = bottom.get();
+				
+				double[] result = new double[topVec.length + bottomVec.length];
+				
+				for (int i=0; i<result.length; i++) {
+					if (i<topVec.length) {
+						result[i] = topVec[i];
 					} else {
-						if (i<newTopMatrixRowSize && j<(vectorHalfSize+1)) {
-							a1[i][j] = matrix[i][j];
-							v1[j] = vector[j];
-							
-						} else if (i<newTopMatrixRowSize && j>=(vectorHalfSize+1)) {
-							a2[i][j-(vectorHalfSize+1)] = matrix[i][j];
-							v2[j-(vectorHalfSize+1)] = vector[j];
-							
-						} else if (i>=newTopMatrixRowSize && j<(vectorHalfSize+1)) {
-							a3[i-newTopMatrixRowSize][j] = matrix[i][j];
-							v1[j] = vector[j];
-							
-						} else if (i>=newTopMatrixRowSize && j>=(vectorHalfSize+1)) {
-							a4[i-newTopMatrixRowSize][j-(vectorHalfSize+1)] = matrix[i][j];
-							v2[j-(vectorHalfSize+1)] = vector[j];
-						}
-						
+						result[i] = bottomVec[i-topVec.length];
 					}
 				}
+				
+				exec.shutdown();
+		
+				
+				return result;
+				
+			} catch (Exception e) {
+				System.out.println("Error with multiplication");
+				return null;
 			}
 			
-			
-
-			Future<double[]> partialTop1 = exec.submit(new MatrixVectorMultiplyTask(a1, v1));
-			Future<double[]> partialTop2 = exec.submit(new MatrixVectorMultiplyTask(a2, v2));			
-			Future<double[]> partialBottom1 = exec.submit(new MatrixVectorMultiplyTask(a3, v1));
-			Future<double[]> partialBottom2 = exec.submit(new MatrixVectorMultiplyTask(a4, v2));
-			
-			Future<double[]> top = exec.submit(new VectorAddTask(partialTop1.get(), partialTop2.get()));
-			Future<double[]> bottom = exec.submit(new VectorAddTask(partialBottom1.get(), partialBottom2.get()));
 	
-			
-			double[] topVec = top.get();
-			double[] bottomVec = bottom.get();
-			
-			double[] result = new double[topVec.length + bottomVec.length];
-			
-			for (int i=0; i<result.length; i++) {
-				if (i<topVec.length) {
-					result[i] = topVec[i];
-				} else {
-					result[i] = bottomVec[i-topVec.length];
-				}
-			}
-			
-			exec.shutdown();
-			return result;
 			
 		}
 		

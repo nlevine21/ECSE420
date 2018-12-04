@@ -7,11 +7,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import ca.mcgill.ecse420.a3.MatrixPartialMultiplier;
+
 public class MatrixVectorMultiplication {
 	
+	public static int MAX_THREADS = 4;
+	public static int MATRIX_SIZE = 2000;
+	
 	public static void main(String[] args) {
-		double[][] matrix = generateRandomMatrix(2000, 2000);
-		double[] vector = generateRandomVector(2000);
+		double[][] matrix = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
+		double[] vector = generateRandomVector(MATRIX_SIZE);
 	
 		
 		long startTime;
@@ -22,20 +27,23 @@ public class MatrixVectorMultiplication {
 		startTime = System.currentTimeMillis();
 		sequentialMatrixVectorMultiplication(matrix, vector);
 		endTime = System.currentTimeMillis();
-		System.out.println("Sequential computational time: "+ (endTime-startTime) + "ms");
+		System.out.println("Sequential computational time: "+ (endTime-startTime) + "ms\n");
 		
 		// Start parallel time computation
-		System.out.println("Computing in parallel");
-		MatrixVectorMultiplyTask t = new MatrixVectorMultiplyTask(matrix,vector);
+		System.out.println("Computing in parallel (Fast Execution)");
+		startTime = System.currentTimeMillis();
+		parallelMatrixVectorMultiplyFast(matrix,vector);
+		endTime = System.currentTimeMillis();
+		System.out.println("Parallel computational time: "+ (endTime-startTime) + "ms\n");
 		
-		try {
-			startTime = System.currentTimeMillis();
-			t.call();
-			endTime = System.currentTimeMillis();
-			System.out.println("Parallel computational time: "+ (endTime-startTime) + "ms");
-		} catch (Exception e) {
-			System.out.println("Error with parallel multiplication");
-		}
+		// Start parallel time computation
+		System.out.println("Computing in parallel (Slow Execution)");
+		startTime = System.currentTimeMillis();
+		parallelMatrixVectorMultiplySlow(matrix,vector);
+		endTime = System.currentTimeMillis();
+		System.out.println("Parallel computational time: "+ (endTime-startTime) + "ms");
+	
+		
 	
 	}
 	
@@ -43,11 +51,11 @@ public class MatrixVectorMultiplication {
 
 		// Verify that the number of columns in matrix matches the number of rows in vector
 		int numColumnsMatrix = matrix[0].length;
-		int numRowsVector = vector.length;
+		int vectorLength = vector.length;
 
 		// If the number of columns in matrix does not match the number of rows in vector, throw
 		// an exception as you cannot multiply these matrices
-		if (numColumnsMatrix != numRowsVector) {
+		if (numColumnsMatrix != vectorLength) {
 			throw new IllegalArgumentException("Cannot multiply matrix and vector");
 		}
 
@@ -71,6 +79,49 @@ public class MatrixVectorMultiplication {
 
 		return result;
 
+	}
+	
+	public static double[] parallelMatrixVectorMultiplyFast(double[][] matrix, double[] vector) {
+
+		// Verify that the number of columns in matrix matches the number of rows in vector
+		int numColumnsMatrix = matrix[0].length;
+		int vectorLength = vector.length;
+
+		// If the number of rows in A does not match the number of columns in B, throw
+		// an exception as you cannot multiply these matrices
+		if (numColumnsMatrix != vectorLength) {
+			throw new IllegalArgumentException("Cannot multiply matrices A and B");
+		}
+
+		int numRowsMatrix = matrix.length;
+		double result[] = new double[numRowsMatrix];
+
+		// Create a Thread Pool to manage all threads
+		ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+
+		// Create and start the desired amount of threads
+		for (int threadNumber=0; threadNumber<MAX_THREADS; threadNumber++) {
+
+			// Create a MatrixPartialMultiplier task where the startingRow corresponds
+			// to the task's thread number
+			if (threadNumber < numRowsMatrix) {
+				MatrixPartialMultiplier task = new MatrixPartialMultiplier(matrix, vector, result, threadNumber, MAX_THREADS);
+				executor.execute(task);
+			} else {
+				continue;
+			}
+		}
+
+		// Wait for all threads to terminate
+		executor.shutdown();
+		while (!executor.isTerminated());
+
+		return result;
+	}
+	
+	public static double[] parallelMatrixVectorMultiplySlow(double[][] matrix, double[] vector) {
+		MatrixVectorMultiplyTask t = new MatrixVectorMultiplyTask(matrix, vector);
+		return t.call();
 	}
 	
 	private static double[][] generateRandomMatrix(int numRows, int numCols) {

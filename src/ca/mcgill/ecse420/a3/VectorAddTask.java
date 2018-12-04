@@ -7,78 +7,56 @@ import java.util.concurrent.Future;
 
 
 public class VectorAddTask implements Callable<double[]> {
-	double[] a, b;
+	double[] a, b, c;
 	ExecutorService exec = Executors.newCachedThreadPool();
+	int start, end;
 	
-	public VectorAddTask(double[] a, double[] b){
+	public VectorAddTask(double[] a, double[] b) {
 		this.a = a;
 		this.b = b;
+		
+		this.c = new double[a.length];
+		this.start = 0;
+		this.end = a.length - 1;
 	}
 	
-	public double[] call() throws Exception {
+	private VectorAddTask(double[] a, double[] b, double[] c, int start, int end){
+		this.a = a;
+		this.b = b;
+		this.c = c;
 		
-		if(a.length == 1){
-			double[] c = new double[1];
-			c[0] = a[0] + b[0];
+		this.start = start;
+		this.end = end;
+	}
+	
+	
+	public double[] call() {
+		
+		
+		if(end == start){
+			c[start] = a[start] + b[start];
 			return c;
 		}else{
+		
+			int halfSize = (((end+1)-start)/2) - 1;
 			
-			double[] a1, a2, b1, b2;
+			int add1Start = start;
+			int add1End = start+halfSize;
+			int add2Start = start+halfSize+1;
+			int add2End = end;
 			
-			int halfSize = a.length/2;
-			boolean evenLength = a.length % 2 == 0;
+			Future<?> topAdd = exec.submit(new VectorAddTask(a, b, c, add1Start, add1End));
+			Future<?> bottomAdd = exec.submit(new VectorAddTask(a, b, c, add2Start, add2End));
 			
-			if (evenLength) {
-				a1 = new double[halfSize];
-				a2 = new double[halfSize];
-				
-				b1 = new double[halfSize];
-				b2 = new double[halfSize];
-			} else {
-				a1 = new double[halfSize+1];
-				a2 = new double[halfSize];
-				
-				b1 = new double[halfSize+1];
-				b2 = new double[halfSize];
+			try {
+				topAdd.get();
+				bottomAdd.get();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			
-			for (int i=0; i<a.length; i++) {
-				if (evenLength) {
-					if (i<halfSize) {
-						a1[i] = a[i];
-						b1[i] = b[i];
-					} else {
-						a2[i-halfSize] = a[i];
-						b2[i-halfSize] = b[i];
-					}
-				} else {
-					if (i<(halfSize+1)) {
-						a1[i] = a[i];
-						b1[i] = b[i];
-					} else {
-						a2[i-(halfSize+1)] = a[i];
-						b2[i-(halfSize+1)] = b[i];
-					}
-				}
-			}
-			
-			Future<double[]> top = exec.submit(new VectorAddTask(a1, b1));
-			Future<double[]> bottom = exec.submit(new VectorAddTask(a2, b2));
-			
-			double[] topVec = top.get();
-			double[] bottomVec = bottom.get();
-			
-			double[] result = new double[topVec.length + bottomVec.length];
-			
-			for (int i=0; i<result.length; i++) {
-				if (i<topVec.length) {
-					result[i] = topVec[i];
-				} else {
-					result[i] = bottomVec[i-topVec.length];
-				}
-			}
-			
-			return result;
+						
+			exec.shutdown();
+			return c;
 	
 		}
 	}
