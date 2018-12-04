@@ -41,6 +41,7 @@ public class MatrixPartialMultiplier implements Runnable {
      * the resulting row in the result Matrix C. It will then skip NUMBER_THREADS rows
      * as these rows will be computed by the other threads and repeat the process.
      *
+     *
      */
     public void run() {
         int numRows = matrix.length;

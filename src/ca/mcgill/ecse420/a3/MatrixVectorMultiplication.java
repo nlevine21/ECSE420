@@ -9,6 +9,9 @@ import java.util.concurrent.Future;
 
 import ca.mcgill.ecse420.a3.MatrixPartialMultiplier;
 
+/**
+ * Test class for matrix-vector multiplication
+ * */
 public class MatrixVectorMultiplication {
 	
 	public static int MAX_THREADS = 4;
@@ -47,6 +50,12 @@ public class MatrixVectorMultiplication {
 	
 	}
 	
+	/**
+	 * Sequential matrix-vector multiplication
+	 * 
+	 *  @param matrix is an nxn matrix of type double
+	 *  @param vector is an n-sized vector of type double
+	 * */
 	public static double[] sequentialMatrixVectorMultiplication(double[][] matrix, double[] vector) {
 
 		// Verify that the number of columns in matrix matches the number of rows in vector
@@ -81,6 +90,12 @@ public class MatrixVectorMultiplication {
 
 	}
 	
+	/**
+	 * Parallel matrix-vector multiplication - implementation 1
+	 * 
+	 * @param matrix is an nxn-sized matrix of type double
+	 * @param vector is an n-sized vector of type double
+	 * */
 	public static double[] parallelMatrixVectorMultiplyFast(double[][] matrix, double[] vector) {
 
 		// Verify that the number of columns in matrix matches the number of rows in vector
@@ -119,11 +134,23 @@ public class MatrixVectorMultiplication {
 		return result;
 	}
 	
+	/**
+	 * Parallel matrix-vector multiplication - implementation 2
+	 * 
+	 * @param matrix is an nxn-sized matrix of type double
+	 * @param vector is an n-sized vector of type double
+	 * */
 	public static double[] parallelMatrixVectorMultiplySlow(double[][] matrix, double[] vector) {
 		MatrixVectorMultiplyTask t = new MatrixVectorMultiplyTask(matrix, vector);
 		return t.call();
 	}
 	
+	/**
+	 * Random number matrix generator
+	 * 
+	 * @param numRows is the number of rows to be created for the randomly generated matrix
+	 * @param numCols is the number of columns to be created for the randomly generated matrix
+	 * */
 	private static double[][] generateRandomMatrix(int numRows, int numCols) {
 		double matrix[][] = new double[numRows][numCols];
 		for (int row = 0; row < numRows; row++) {
@@ -134,6 +161,11 @@ public class MatrixVectorMultiplication {
 		return matrix;
 	}
 	
+	/**
+	 * Random number vector generator
+	 * 
+	 * @param numRows is the number of rows to be created for the randomly generated vector
+	 * */
 	private static double[] generateRandomVector(int numRows) {
 		double vector[] = new double[numRows];
 		for (int row = 0; row < numRows; row++) {
